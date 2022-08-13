@@ -1,6 +1,7 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
-    <!-- <div
+    <div
+      v-if="this.loading"
       class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center"
     >
       <svg
@@ -23,7 +24,7 @@
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
         ></path>
       </svg>
-    </div> -->
+    </div>
     <div class="container">
       <section>
         <div class="flex">
@@ -43,14 +44,15 @@
               />
             </div>
             <div
+              v-if="this.coins?.length"
               class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
             >
               <span
-                v-for="(preselector, idx) in preselectors"
+                v-for="(coin, idx) in coins"
                 :key="idx"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
-                {{ preselector }}
+                {{ coin }}
               </span>
             </div>
             <!-- <div class="text-sm text-red-600">Такой тикер уже добавлен</div> -->
@@ -158,21 +160,49 @@
 </template>
 
 <script>
+import CoinDTO from "./dto/Coin";
+
 export default {
   name: "App",
   data() {
     return {
+      loading: false,
       tiker: null,
-      preselectors: ["BTC", "DOGE", "BCH", "CHD"],
+      coins: [],
       selectedTiker: null,
-      tikers: [
-        { name: "test", price: 99, cur: "RUB" },
-        { name: "test1", price: 99, cur: "USD" },
-        { name: "test2", price: 99, cur: "USD" },
-      ],
+      tikers: [],
     };
   },
+  created() {
+    this.getAllcoins();
+  },
   methods: {
+    async getAllcoins() {
+      this.loading = true;
+      try {
+        const response = await fetch(
+          "https://min-api.cryptocompare.com/data/all/coinlist?summary=true",
+          {
+            method: "GET",
+            headers: {
+              // "Content-Type": "application/json",
+              authorization: process.env.CRYPTOCOMPARE,
+            },
+          }
+        );
+        const result = await response.json();
+        for (const [key, value] of Object.entries(result.Data)) {
+          console.log(key);
+          this.coins.push(
+            new CoinDTO(value.FullName, value.Id, value.ImageUrl, value.Symbol)
+          );
+        }
+      } catch (error) {
+        console.warn(error);
+      } finally {
+        this.loading = false;
+      }
+    },
     toggle(value) {
       if (this.selectedTiker?.name === value) {
         this.unselectTiker();
