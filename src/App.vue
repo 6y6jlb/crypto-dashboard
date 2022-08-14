@@ -88,7 +88,7 @@
             v-for="t in tikers"
             :key="t.name"
             @click.stop="this.toggle(t.Id)"
-            :class="{ 'border-4': this.selectedTiker?.name === t.name }"
+            :class="{ 'border-4': this.selectedTiker?.Id === t.Id }"
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
@@ -96,7 +96,7 @@
                 {{ t.Name }}
               </dt>
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                {{ t.price || 0 }}
+                {{ t.Price[this.currency] || 0 }}
               </dd>
             </div>
             <div class="w-full border-t border-gray-200"></div>
@@ -168,15 +168,20 @@ export default {
   data() {
     return {
       loading: false,
+      currency: "USD",
       tiker: null,
       preselectedCoins: [],
       coins: [],
       selectedTiker: null,
+      chartValues: {},
       tikers: [],
     };
   },
   created() {
     this.getAllcoins();
+    setInterval(() => {
+      this.getPrices();
+    }, 5000);
   },
   watch: {
     tiker(value) {
@@ -198,12 +203,44 @@ export default {
             currentCoin.Name.includes(value) ||
             currentCoin.Symbol.includes(value)
           ) {
-            debugger;
             this.preselectedCoins.push(currentCoin);
           } else {
             continue;
           }
         }
+      }
+    },
+    async getPrices() {
+      if (!this.tikers.length) return;
+
+      this.updating = true;
+      try {
+        const fsyms = this.tikers.map((t) => t.Symbol).join(",");
+        const response = await fetch(
+          `https://min-api.cryptocompare.com/data/pricemulti?relaxedValidation=true&fsyms=${fsyms}&tsyms=USD,EUR,RUB`,
+          {
+            method: "GET",
+            headers: {
+              authorization: process.env.CRYPTOCOMPARE,
+            },
+          }
+        );
+        const result = await response.json();
+        for (const [key, value] of Object.entries(result)) {
+          const currentTiker = this.tikers.find((t) => t.Name === key);
+          if (currentTiker) {
+            currentTiker.Price = value;
+          }
+          if (this.chartValues[key]) {
+            this.chartValues[key].push(value);
+          } else {
+            this.chartValues[key] = [];
+          }
+        }
+      } catch (error) {
+        console.warn(error);
+      } finally {
+        this.updating = false;
       }
     },
     async getAllcoins() {
@@ -254,6 +291,7 @@ export default {
         (coin) => coin.Symbol === value || coin.FullName === value
       );
       this.tikers = [...this.tikers, newTicker];
+      this.chartValues[newTicker.Symbol] = [];
       this.tiker = null;
     },
     removeTiker(value) {

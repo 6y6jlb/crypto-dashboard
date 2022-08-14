@@ -1,10 +1,11 @@
 export default class CoinDTO {
-  constructor(Name, FullName, Id, ImageUrl, Symbol) {
+  constructor(Name, FullName, Id, ImageUrl, Symbol, Price = {}) {
     this._Name = Name;
     this._FullName = FullName;
     this._Id = Id;
     this._ImageUrl = ImageUrl;
     this._Symbol = Symbol;
+    this._Price = Price;
   }
 
   get Name() {
@@ -21,5 +22,11 @@ export default class CoinDTO {
   }
   get Symbol() {
     return this._Symbol;
+  }
+  get Price() {
+    return this._Price;
+  }
+  set Price(value) {
+    this._Price = value;
   }
 }
