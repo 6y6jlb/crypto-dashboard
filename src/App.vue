@@ -44,22 +44,23 @@
               />
             </div>
             <div
-              v-if="this.coins?.length"
+              v-if="this.preselectedCoins?.length"
               class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
             >
               <span
-                v-for="(coin, idx) in coins"
-                :key="idx"
+                v-for="coin in this.preselectedCoins"
+                :key="coin.Id"
+                @click="this.addTiker(coin.FullName)"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
-                {{ coin }}
+                {{ coin.Name }}
               </span>
             </div>
             <!-- <div class="text-sm text-red-600">Такой тикер уже добавлен</div> -->
           </div>
         </div>
         <button
-          @click="addTiker"
+          @click="this.addTiker(this.tiker)"
           type="button"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
@@ -86,21 +87,21 @@
           <div
             v-for="t in tikers"
             :key="t.name"
-            @click.stop="this.toggle(t.name)"
+            @click.stop="this.toggle(t.Id)"
             :class="{ 'border-4': this.selectedTiker?.name === t.name }"
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
               <dt class="text-sm font-medium text-gray-500 truncate">
-                {{ t.name }} - {{ t.cur }}
+                {{ t.Name }}
               </dt>
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                {{ t.price }}
+                {{ t.price || 0 }}
               </dd>
             </div>
             <div class="w-full border-t border-gray-200"></div>
             <button
-              @click.prevent="this.removeTiker(t.name)"
+              @click.prevent="this.removeTiker(t.Id)"
               class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none"
             >
               <svg
@@ -168,6 +169,7 @@ export default {
     return {
       loading: false,
       tiker: null,
+      preselectedCoins: [],
       coins: [],
       selectedTiker: null,
       tikers: [],
@@ -176,7 +178,34 @@ export default {
   created() {
     this.getAllcoins();
   },
+  watch: {
+    tiker(value) {
+      this.getPreselectedCoins(value);
+    },
+  },
   methods: {
+    getPreselectedCoins(value = "BTC") {
+      if (this.coins.length) {
+        this.preselectedCoins = [];
+        for (
+          let coin = 0;
+          this.preselectedCoins.length < 4 && coin <= this.coins.length;
+          coin++
+        ) {
+          const currentCoin = this.coins[coin];
+          if (
+            currentCoin.FullName.includes(value) ||
+            currentCoin.Name.includes(value) ||
+            currentCoin.Symbol.includes(value)
+          ) {
+            debugger;
+            this.preselectedCoins.push(currentCoin);
+          } else {
+            continue;
+          }
+        }
+      }
+    },
     async getAllcoins() {
       this.loading = true;
       try {
@@ -185,18 +214,22 @@ export default {
           {
             method: "GET",
             headers: {
-              // "Content-Type": "application/json",
               authorization: process.env.CRYPTOCOMPARE,
             },
           }
         );
         const result = await response.json();
         for (const [key, value] of Object.entries(result.Data)) {
-          console.log(key);
-          this.coins.push(
-            new CoinDTO(value.FullName, value.Id, value.ImageUrl, value.Symbol)
+          const newCoin = new CoinDTO(
+            key,
+            value.FullName,
+            value.Id,
+            value.ImageUrl,
+            value.Symbol
           );
+          this.coins.push(newCoin);
         }
+        this.getPreselectedCoins();
       } catch (error) {
         console.warn(error);
       } finally {
@@ -204,27 +237,27 @@ export default {
       }
     },
     toggle(value) {
-      if (this.selectedTiker?.name === value) {
+      if (this.selectedTiker?.Id === value) {
         this.unselectTiker();
       } else {
         this.selectTiker(value);
       }
     },
     selectTiker(value) {
-      this.selectedTiker = this.tikers.find((tiker) => tiker.name === value);
+      this.selectedTiker = this.tikers.find((tiker) => tiker.Id === value);
     },
     unselectTiker() {
       this.selectedTiker = null;
     },
-    addTiker() {
-      this.tikers = [
-        ...this.tikers,
-        { name: this.tiker, price: Math.random() * 100 },
-      ];
+    addTiker(value) {
+      const newTicker = this.coins.find(
+        (coin) => coin.Symbol === value || coin.FullName === value
+      );
+      this.tikers = [...this.tikers, newTicker];
       this.tiker = null;
     },
     removeTiker(value) {
-      this.tikers = this.tikers.filter((t) => value !== t.name);
+      this.tikers = this.tikers.filter((t) => value !== t.Id);
       this.unselectTiker();
     },
   },
