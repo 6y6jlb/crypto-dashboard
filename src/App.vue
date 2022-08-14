@@ -85,10 +85,12 @@
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="t in tikers"
-            :key="t.name"
+            v-for="t in this.tikers"
+            :key="t.Id"
             @click.stop="this.toggle(t.Id)"
-            :class="{ 'border-4': this.selectedTiker?.Id === t.Id }"
+            :class="{
+              'border-4': this.showBorder(t.Id),
+            }"
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
@@ -123,13 +125,15 @@
         <hr class="w-full border-t border-gray-600 my-4" />
         <section v-if="this.selectedTiker" class="relative">
           <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-            {{ this.selectedTiker.name }} - {{ this.selectedTiker.cur }}
+            {{ this.selectedTiker.Name }} - {{ this.currency }}
           </h3>
           <div class="flex items-end border-gray-600 border-b border-l h-64">
-            <div class="bg-purple-800 border w-10 h-24"></div>
-            <div class="bg-purple-800 border w-10 h-32"></div>
-            <div class="bg-purple-800 border w-10 h-48"></div>
-            <div class="bg-purple-800 border w-10 h-16"></div>
+            <div
+              v-for="(item, idx) in this.getSelectedChart()"
+              :key="idx"
+              :style="{ height: item + '%' }"
+              class="bg-purple-800 border w-10"
+            />
           </div>
           <button type="button" class="absolute top-0 right-0">
             <svg
@@ -168,7 +172,8 @@ export default {
   data() {
     return {
       loading: false,
-      currency: "USD",
+      currency: "RUB",
+      preselectedTiker: "DOGE",
       tiker: null,
       preselectedCoins: [],
       coins: [],
@@ -185,23 +190,43 @@ export default {
   },
   watch: {
     tiker(value) {
-      this.getPreselectedCoins(value);
+      this.getPreselectedCoins(value || this.preselectedTiker);
     },
   },
   methods: {
-    getPreselectedCoins(value = "BTC") {
+    showBorder(id) {
+      return this.selectedTiker && id === this.selectedTiker.Id;
+    },
+    getPercentageValues(values) {
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const one = (max - min) / 100;
+      return values.map((value) => {
+        const diff = max - value;
+        const result = diff / one;
+        return result;
+      });
+    },
+    getSelectedChart() {
+      const options = this.chartValues[this.selectedTiker.Name].map(
+        (item) => +item[this.currency]
+      );
+      return this.getPercentageValues(options);
+    },
+    getPreselectedCoins(value = this.preselectedTiker) {
       if (this.coins.length) {
         this.preselectedCoins = [];
         for (
           let coin = 0;
           this.preselectedCoins.length < 4 && coin <= this.coins.length;
-          coin++
+          coin += 1
         ) {
           const currentCoin = this.coins[coin];
+
           if (
-            currentCoin.FullName.includes(value) ||
-            currentCoin.Name.includes(value) ||
-            currentCoin.Symbol.includes(value)
+            currentCoin?.FullName.toLowerCase().includes(value.toLowerCase()) ||
+            currentCoin?.Name.toLowerCase().includes(value.toLowerCase()) ||
+            currentCoin?.Symbol.toLowerCase().includes(value.toLowerCase())
           ) {
             this.preselectedCoins.push(currentCoin);
           } else {
