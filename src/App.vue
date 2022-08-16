@@ -53,7 +53,7 @@
                 @click="this.addTiker(coin.FullName)"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
-                {{ coin.Name }}
+                {{ coin.Name }} - {{ this.currency }}
               </span>
             </div>
             <!-- <div class="text-sm text-red-600">Такой тикер уже добавлен</div> -->
@@ -131,7 +131,8 @@
             <div
               v-for="(item, idx) in this.getSelectedChart()"
               :key="idx"
-              :style="{ height: item + '%' }"
+              :style="{ height: item.percent + '%' }"
+              :title="item.value"
               class="bg-purple-800 border w-10"
             />
           </div>
@@ -142,6 +143,7 @@
               xmlns:svgjs="http://svgjs.com/svgjs"
               version="1.1"
               width="30"
+              @click="this.toggle(this.selectedTiker.Id)"
               height="30"
               x="0"
               y="0"
@@ -203,8 +205,8 @@ export default {
       const one = (max - min) / 100;
       return values.map((value) => {
         const diff = max - value;
-        const result = diff / one;
-        return result;
+        const percent = diff / one;
+        return { percent, value };
       });
     },
     getSelectedChart() {
