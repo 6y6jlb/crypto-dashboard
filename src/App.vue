@@ -53,7 +53,7 @@
                 @click="this.addTiker(coin.FullName)"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
-                {{ coin.Name }} - {{ this.currency }}
+                {{ coin.Name }}
               </span>
             </div>
             <!-- <div class="text-sm text-red-600">Такой тикер уже добавлен</div> -->
@@ -95,7 +95,7 @@
           >
             <div class="px-4 py-5 sm:p-6 text-center">
               <dt class="text-sm font-medium text-gray-500 truncate">
-                {{ t.Name }}
+                {{ t.Name }} - {{ this.currency }}
               </dt>
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
                 {{ t.Price[this.currency] || 0 }}
@@ -185,6 +185,8 @@ export default {
     };
   },
   created() {
+    this.tikers = JSON.parse(localStorage.getItem("tikers-list")) || [];
+
     this.getAllcoins();
     setInterval(() => {
       this.getPrices();
@@ -193,6 +195,9 @@ export default {
   watch: {
     tiker(value) {
       this.getPreselectedCoins(value || this.preselectedTiker);
+    },
+    tikers() {
+      this.tikersToLS();
     },
   },
   methods: {
@@ -324,6 +329,9 @@ export default {
     removeTiker(value) {
       this.tikers = this.tikers.filter((t) => value !== t.Id);
       this.unselectTiker();
+    },
+    tikersToLS() {
+      window.localStorage.setItem("tikers-list", JSON.stringify(this.tikers));
     },
   },
 };

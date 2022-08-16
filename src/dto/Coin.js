@@ -1,10 +1,16 @@
 export default class CoinDTO {
   constructor(Name, FullName, Id, ImageUrl, Symbol, Price = {}) {
+    /**@type {string} */
     this._Name = Name;
+    /**@type {string} */
     this._FullName = FullName;
+    /**@type {string} */
     this._Id = Id;
+    /**@type {string} */
     this._ImageUrl = ImageUrl;
+    /**@type {string} */
     this._Symbol = Symbol;
+    /**@type {Object} */
     this._Price = Price;
   }
 
@@ -27,6 +33,7 @@ export default class CoinDTO {
     return this._Price;
   }
   set Price(value) {
+    /**@type {Object} */
     this._Price = value;
   }
 }
