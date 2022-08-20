@@ -44,7 +44,7 @@
               />
             </div>
             <div
-              v-if="this.preselectedCoins?.length"
+              v-if="this.preselectedCoins.length"
               class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
             >
               <span
@@ -56,7 +56,9 @@
                 {{ coin.Name }}
               </span>
             </div>
-            <!-- <div class="text-sm text-red-600">Такой тикер уже добавлен</div> -->
+            <div v-if="this.errors.tiker" class="text-sm text-red-600">
+              {{ this.errors.tiker }}
+            </div>
           </div>
         </div>
         <button
@@ -129,7 +131,7 @@
           </h3>
           <div class="flex items-end border-gray-600 border-b border-l h-64">
             <div
-              v-for="(item, idx) in this.getSelectedChart()"
+              v-for="(item, idx) in this.graphValues"
               :key="idx"
               :style="{ height: item.percent + '%' }"
               :title="item.value"
@@ -182,11 +184,21 @@ export default {
       selectedTiker: null,
       chartValues: {},
       tikers: [],
+      errors: {},
     };
   },
   created() {
-    this.tikers = JSON.parse(localStorage.getItem("tikers-list")) || [];
-
+    const items = JSON.parse(localStorage.getItem("tikers-list")) || [];
+    this.tikers = items.map(
+      (item) =>
+        new CoinDTO(
+          item._Name,
+          item._FullName,
+          item._Id,
+          item._ImageUrl,
+          item._Symbol
+        )
+    );
     this.getAllcoins();
     setInterval(() => {
       this.getPrices();
@@ -195,16 +207,17 @@ export default {
   watch: {
     tiker(value) {
       this.getPreselectedCoins(value || this.preselectedTiker);
+      this.errors = {};
     },
     tikers() {
-      this.tikersToLS();
+      window.localStorage.setItem("tikers-list", JSON.stringify(this.tikers));
     },
   },
-  methods: {
-    showBorder(id) {
-      return this.selectedTiker && id === this.selectedTiker.Id;
-    },
-    getPercentageValues(values) {
+  computed: {
+    graphValues() {
+      const values = this.chartValues[this.selectedTiker.Name].map(
+        (item) => +item[this.currency]
+      );
       const min = Math.min(...values);
       const max = Math.max(...values);
       const one = (max - min) / 100;
@@ -214,11 +227,10 @@ export default {
         return { percent, value };
       });
     },
-    getSelectedChart() {
-      const options = this.chartValues[this.selectedTiker.Name].map(
-        (item) => +item[this.currency]
-      );
-      return this.getPercentageValues(options);
+  },
+  methods: {
+    showBorder(id) {
+      return this.selectedTiker && id === this.selectedTiker.Id;
     },
     getPreselectedCoins(value = this.preselectedTiker) {
       if (this.coins.length) {
@@ -322,6 +334,9 @@ export default {
       const newTicker = this.coins.find(
         (coin) => coin.Symbol === value || coin.FullName === value
       );
+      if (newTicker && this.tikers.find((tiker) => tiker.Id === newTicker.Id)) {
+        this.errors = { tiker: "Такой тикер уже добавлен" };
+      }
       this.tikers = [...this.tikers, newTicker];
       this.chartValues[newTicker.Symbol] = [];
       this.tiker = null;
@@ -329,9 +344,6 @@ export default {
     removeTiker(value) {
       this.tikers = this.tikers.filter((t) => value !== t.Id);
       this.unselectTiker();
-    },
-    tikersToLS() {
-      window.localStorage.setItem("tikers-list", JSON.stringify(this.tikers));
     },
   },
 };
