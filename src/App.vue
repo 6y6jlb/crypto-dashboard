@@ -84,6 +84,28 @@
       </section>
 
       <template v-if="this.tikers.length">
+        <div
+          v-if="this.tikers.length >= this.perPage"
+          class="grid grid-flow-col auto-cols-max gap-2"
+        >
+          <hr class="w-full border-t border-gray-600 my-4" />
+          <button
+            v-if="this.page < this.maxPage"
+            @click="this.page - 1"
+            type="button"
+            class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Назад
+          </button>
+          <button
+            v-if="this.page >= this.maxPage"
+            @click="this.page + 1"
+            type="button"
+            class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Вперед
+          </button>
+        </div>
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
@@ -175,15 +197,17 @@ export default {
   name: "App",
   data() {
     return {
-      loading: false,
-      currency: "RUB",
-      preselectedTiker: "DOGE",
       tiker: null,
-      preselectedCoins: [],
+      filter: null,
+      page: 0,
+      perPage: 6,
+      tikers: [],
       coins: [],
       selectedTiker: null,
       chartValues: {},
-      tikers: [],
+      currency: "RUB",
+      preselectedTiker: "DOGE",
+      loading: false,
       errors: {},
     };
   },
@@ -205,8 +229,7 @@ export default {
     }, 5000);
   },
   watch: {
-    tiker(value) {
-      this.getPreselectedCoins(value || this.preselectedTiker);
+    tiker() {
       this.errors = {};
     },
     tikers() {
@@ -214,16 +237,44 @@ export default {
     },
   },
   computed: {
+    preselectedCoins() {
+      const result = [];
+      const value = (this.tiker || this.preselectedTiker || "").toLowerCase();
+      if (this.coins.length) {
+        for (
+          let coin = 0;
+          result.length < 4 && coin <= this.coins.length;
+          coin += 1
+        ) {
+          const currentCoin = this.coins[coin];
+          const hasMatch =
+            currentCoin?.FullName.toLowerCase().includes(value) ||
+            currentCoin?.Name.toLowerCase().includes(value) ||
+            currentCoin?.Symbol.toLowerCase().includes(value);
+
+          const alreadyAdded = this.tikers.find(
+            (tiker) => tiker.Id === currentCoin?.Id
+          );
+
+          if (!alreadyAdded && hasMatch) {
+            result.push(currentCoin);
+          } else {
+            continue;
+          }
+        }
+      }
+      return result;
+    },
+    maxPage() {
+      return Math.ceil(this.tikers.legth / this.perPage);
+    },
     graphValues() {
       const values = this.chartValues[this.selectedTiker.Name].map(
         (item) => +item[this.currency]
       );
-      const min = Math.min(...values);
       const max = Math.max(...values);
-      const one = (max - min) / 100;
       return values.map((value) => {
-        const diff = max - value;
-        const percent = diff / one;
+        const percent = max - value / (max - Math.min(...values)) / 100;
         return { percent, value };
       });
     },
@@ -232,28 +283,7 @@ export default {
     showBorder(id) {
       return this.selectedTiker && id === this.selectedTiker.Id;
     },
-    getPreselectedCoins(value = this.preselectedTiker) {
-      if (this.coins.length) {
-        this.preselectedCoins = [];
-        for (
-          let coin = 0;
-          this.preselectedCoins.length < 4 && coin <= this.coins.length;
-          coin += 1
-        ) {
-          const currentCoin = this.coins[coin];
 
-          if (
-            currentCoin?.FullName.toLowerCase().includes(value.toLowerCase()) ||
-            currentCoin?.Name.toLowerCase().includes(value.toLowerCase()) ||
-            currentCoin?.Symbol.toLowerCase().includes(value.toLowerCase())
-          ) {
-            this.preselectedCoins.push(currentCoin);
-          } else {
-            continue;
-          }
-        }
-      }
-    },
     async getPrices() {
       if (!this.tikers.length) return;
 
@@ -310,7 +340,6 @@ export default {
           );
           this.coins.push(newCoin);
         }
-        this.getPreselectedCoins();
       } catch (error) {
         console.warn(error);
       } finally {
@@ -336,13 +365,14 @@ export default {
       );
       if (newTicker && this.tikers.find((tiker) => tiker.Id === newTicker.Id)) {
         this.errors = { tiker: "Такой тикер уже добавлен" };
+        return;
       }
       this.tikers = [...this.tikers, newTicker];
       this.chartValues[newTicker.Symbol] = [];
       this.tiker = null;
     },
     removeTiker(value) {
-      this.tikers = this.tikers.filter((t) => value !== t.Id);
+      this.tikers = this.tikers.filter((t) => value !== t.Id) || [];
       this.unselectTiker();
     },
   },
