@@ -83,33 +83,53 @@
         </button>
       </section>
 
-      <template v-if="this.tikers.length">
-        <div
-          v-if="this.tikers.length >= this.perPage"
-          class="grid grid-flow-col auto-cols-max gap-2"
-        >
-          <hr class="w-full border-t border-gray-600 my-4" />
+      <div
+        v-if="this.tikers.length"
+        class="grid grid-flow-col auto-cols-max gap-2"
+      >
+        <hr class="w-full border-t border-gray-600 my-4" />
+        <input
+          v-model="filter"
+          type="text"
+          name="filter"
+          id="filter"
+          class="my-4 block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+          placeholder="Фильтрация"
+        />
+        <template v-if="this.filteredTikets.length">
           <button
-            v-if="this.page < this.maxPage"
-            @click="this.page - 1"
+            v-if="this.page > 1"
+            @click="this.page--"
             type="button"
             class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
           >
             Назад
           </button>
           <button
-            v-if="this.page >= this.maxPage"
-            @click="this.page + 1"
+            v-if="this.page < this.maxPage"
+            @click="this.page++"
             type="button"
             class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
           >
             Вперед
           </button>
-        </div>
+        </template>
+      </div>
+      <div v-if="this.errors.filter" class="px-4 text-sm text-red-600">
+        {{ this.errors.filter }}
+      </div>
+      <div class="text-slate-400 my-6 px-4">
+        Всего: &nbsp;
+        {{ this.filteredTikets.length }}
+        /
+        {{ this.tikers.length }}
+      </div>
+
+      <template v-if="this.filteredTikets.length">
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="t in this.tikers"
+            v-for="t in this.filteredTikets"
             :key="t.Id"
             @click.stop="this.toggle(t.Id)"
             :class="{
@@ -199,7 +219,7 @@ export default {
     return {
       tiker: null,
       filter: null,
-      page: 0,
+      page: 1,
       perPage: 6,
       tikers: [],
       coins: [],
@@ -212,6 +232,19 @@ export default {
     };
   },
   created() {
+    const params = Object.fromEntries(
+      new URL(window.location).searchParams.entries()
+    );
+    if (params["page"]) {
+      this.page = params["page"];
+    }
+    if (params["per_page"]) {
+      this.perPage = params["per_page"];
+    }
+    if (params["filter"]) {
+      this.filter = params["filter"];
+    }
+
     const items = JSON.parse(localStorage.getItem("tikers-list")) || [];
     this.tikers = items.map(
       (item) =>
@@ -234,9 +267,48 @@ export default {
     },
     tikers() {
       window.localStorage.setItem("tikers-list", JSON.stringify(this.tikers));
+      this.filter = "";
+      this.page = 1;
+    },
+    filter() {
+      if (!this.filter || /[a-zA-Z0-9\s]/.test(this.filter)) {
+        this.errors = {};
+        this.page = 1;
+        window.history.replaceState(
+          {},
+          "",
+          window.location.pathname +
+            `?filter=${this.filter}&page=${this.page}&per_page=${this.perPage}`
+        );
+      } else {
+        this.errors = { filter: "Строка содержит недопустимые символы." };
+      }
+    },
+    page() {
+      window.history.pushState(
+        {},
+        "",
+        window.location.pathname +
+          `?filter=${this.filter}&page=${this.page}&per_page=${this.perPage}`
+      );
     },
   },
   computed: {
+    filteredTikets() {
+      const tikets = this.tikers.filter((tiker) => {
+        const value = (this.filter || "").toLowerCase().trim();
+        const hasMatch =
+          tiker.FullName.toLowerCase().includes(value) ||
+          tiker.Name.toLowerCase().includes(value) ||
+          tiker.Symbol.toLowerCase().includes(value);
+
+        return hasMatch;
+      });
+
+      const start = (this.page - 1) * this.perPage;
+      const end = this.page * this.perPage;
+      return tikets.slice(start, end);
+    },
     preselectedCoins() {
       const result = [];
       const value = (this.tiker || this.preselectedTiker || "").toLowerCase();
@@ -266,7 +338,7 @@ export default {
       return result;
     },
     maxPage() {
-      return Math.ceil(this.tikers.legth / this.perPage);
+      return Math.ceil(this.tikers.length / this.perPage);
     },
     graphValues() {
       const values = this.chartValues[this.selectedTiker.Name].map(
