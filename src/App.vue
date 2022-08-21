@@ -220,7 +220,7 @@ export default {
       tiker: null,
       filter: null,
       page: 1,
-      perPage: 6,
+      per_page: 6,
       tikers: [],
       coins: [],
       selectedTiker: null,
@@ -235,15 +235,12 @@ export default {
     const params = Object.fromEntries(
       new URL(window.location).searchParams.entries()
     );
-    if (params["page"]) {
-      this.page = params["page"];
-    }
-    if (params["per_page"]) {
-      this.perPage = params["per_page"];
-    }
-    if (params["filter"]) {
-      this.filter = params["filter"];
-    }
+    const VALID_KEYS = ["page", "per_page", "filter"];
+    VALID_KEYS.forEach((key) => {
+      if (params[key]) {
+        this[key] = params[key];
+      }
+    });
 
     const items = JSON.parse(localStorage.getItem("tikers-list")) || [];
     this.tikers = items.map(
@@ -278,7 +275,7 @@ export default {
           {},
           "",
           window.location.pathname +
-            `?filter=${this.filter}&page=${this.page}&per_page=${this.perPage}`
+            `?filter=${this.filter}&page=${this.page}&per_page=${this.per_page}`
         );
       } else {
         this.errors = { filter: "Строка содержит недопустимые символы." };
@@ -289,13 +286,19 @@ export default {
         {},
         "",
         window.location.pathname +
-          `?filter=${this.filter}&page=${this.page}&per_page=${this.perPage}`
+          `?filter=${this.filter}&page=${this.page}&per_page=${this.per_page}`
       );
     },
   },
   computed: {
+    startIndex() {
+      return (this.page - 1) * this.per_page;
+    },
+    endIndex() {
+      return this.page * this.per_page;
+    },
     filteredTikets() {
-      const tikets = this.tikers.filter((tiker) => {
+      const tikers = this.tikers.filter((tiker) => {
         const value = (this.filter || "").toLowerCase().trim();
         const hasMatch =
           tiker.FullName.toLowerCase().includes(value) ||
@@ -305,9 +308,7 @@ export default {
         return hasMatch;
       });
 
-      const start = (this.page - 1) * this.perPage;
-      const end = this.page * this.perPage;
-      return tikets.slice(start, end);
+      return tikers.slice(this.startIndex, this.endIndex);
     },
     preselectedCoins() {
       const result = [];
@@ -338,15 +339,17 @@ export default {
       return result;
     },
     maxPage() {
-      return Math.ceil(this.tikers.length / this.perPage);
+      return Math.ceil(this.tikers.length / this.per_page);
     },
     graphValues() {
       const values = this.chartValues[this.selectedTiker.Name].map(
         (item) => +item[this.currency]
       );
       const max = Math.max(...values);
+      const min = Math.min(...values);
+
       return values.map((value) => {
-        const percent = max - value / (max - Math.min(...values)) / 100;
+        const percent = max === min ? 50 : max - value / (max - min) / 100;
         return { percent, value };
       });
     },
