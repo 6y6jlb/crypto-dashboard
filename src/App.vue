@@ -34,7 +34,7 @@
             >
             <div class="mt-1 relative rounded-md shadow-md">
               <input
-                v-model="tiker"
+                v-model="ticker"
                 @keydown.enter="addTiker"
                 type="text"
                 name="wallet"
@@ -56,13 +56,13 @@
                 {{ coin.Name }}
               </span>
             </div>
-            <div v-if="this.errors.tiker" class="text-sm text-red-600">
-              {{ this.errors.tiker }}
+            <div v-if="this.errors.ticker" class="text-sm text-red-600">
+              {{ this.errors.ticker }}
             </div>
           </div>
         </div>
         <button
-          @click="this.addTiker(this.tiker)"
+          @click="this.addTiker(this.ticker)"
           type="button"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
@@ -84,7 +84,7 @@
       </section>
 
       <div
-        v-if="this.tikers.length"
+        v-if="this.tickers.length"
         class="grid grid-flow-col auto-cols-max gap-2"
       >
         <hr class="w-full border-t border-gray-600 my-4" />
@@ -122,7 +122,7 @@
         Всего: &nbsp;
         {{ this.filteredTikets.length }}
         /
-        {{ this.tikers.length }}
+        {{ this.tickers.length }}
       </div>
 
       <template v-if="this.filteredTikets.length">
@@ -211,17 +211,18 @@
 </template>
 
 <script>
+import { subscribeToTicker, unsubscribeFromTicker } from "./api";
 import CoinDTO from "./dto/Coin";
 
 export default {
   name: "App",
   data() {
     return {
-      tiker: null,
+      ticker: null,
       filter: null,
       page: 1,
       per_page: 6,
-      tikers: [],
+      tickers: [],
       coins: [],
       selectedTiker: null,
       chartValues: {},
@@ -242,8 +243,8 @@ export default {
       }
     });
 
-    const items = JSON.parse(localStorage.getItem("tikers-list")) || [];
-    this.tikers = items.map(
+    const items = JSON.parse(localStorage.getItem("tickers-list")) || [];
+    this.tickers = items.map(
       (item) =>
         new CoinDTO(
           item._Name,
@@ -253,17 +254,22 @@ export default {
           item._Symbol
         )
     );
+    this.tickers.forEach((ticker) => {
+      subscribeToTicker(ticker.Symbol, (price) =>
+        this.updatePrice(ticker.Symbol, price)
+      );
+    });
     this.getAllcoins();
-    setInterval(() => {
-      this.getPrices();
-    }, 5000);
+    // setInterval(() => {
+    //   this.getPrices();
+    // }, 5000);
   },
   watch: {
-    tiker() {
+    ticker() {
       this.errors = {};
     },
-    tikers() {
-      window.localStorage.setItem("tikers-list", JSON.stringify(this.tikers));
+    tickers() {
+      window.localStorage.setItem("tickers-list", JSON.stringify(this.tickers));
       this.filter = "";
       this.page = 1;
     },
@@ -298,21 +304,21 @@ export default {
       return this.page * this.per_page;
     },
     filteredTikets() {
-      const tikers = this.tikers.filter((tiker) => {
+      const tickers = this.tickers.filter((ticker) => {
         const value = (this.filter || "").toLowerCase().trim();
         const hasMatch =
-          tiker.FullName.toLowerCase().includes(value) ||
-          tiker.Name.toLowerCase().includes(value) ||
-          tiker.Symbol.toLowerCase().includes(value);
+          ticker.FullName.toLowerCase().includes(value) ||
+          ticker.Name.toLowerCase().includes(value) ||
+          ticker.Symbol.toLowerCase().includes(value);
 
         return hasMatch;
       });
 
-      return tikers.slice(this.startIndex, this.endIndex);
+      return tickers.slice(this.startIndex, this.endIndex);
     },
     preselectedCoins() {
       const result = [];
-      const value = (this.tiker || this.preselectedTiker || "").toLowerCase();
+      const value = (this.ticker || this.preselectedTiker || "").toLowerCase();
       if (this.coins.length) {
         for (
           let coin = 0;
@@ -325,8 +331,8 @@ export default {
             currentCoin?.Name.toLowerCase().includes(value) ||
             currentCoin?.Symbol.toLowerCase().includes(value);
 
-          const alreadyAdded = this.tikers.find(
-            (tiker) => tiker.Id === currentCoin?.Id
+          const alreadyAdded = this.tickers.find(
+            (ticker) => ticker.Id === currentCoin?.Id
           );
 
           if (!alreadyAdded && hasMatch) {
@@ -339,7 +345,7 @@ export default {
       return result;
     },
     maxPage() {
-      return Math.ceil(this.tikers.length / this.per_page);
+      return Math.ceil(this.tickers.length / this.per_page);
     },
     graphValues() {
       const values = this.chartValues[this.selectedTiker.Name].map(
@@ -360,11 +366,11 @@ export default {
     },
 
     async getPrices() {
-      if (!this.tikers.length) return;
+      if (!this.tickers.length) return;
 
       this.updating = true;
       try {
-        const fsyms = this.tikers.map((t) => t.Symbol).join(",");
+        const fsyms = this.tickers.map((t) => t.Symbol).join(",");
         const response = await fetch(
           `https://min-api.cryptocompare.com/data/pricemulti?relaxedValidation=true&fsyms=${fsyms}&tsyms=USD,EUR,RUB`,
           {
@@ -376,7 +382,7 @@ export default {
         );
         const result = await response.json();
         for (const [key, value] of Object.entries(result)) {
-          const currentTiker = this.tikers.find((t) => t.Name === key);
+          const currentTiker = this.tickers.find((t) => t.Name === key);
           if (currentTiker) {
             currentTiker.Price = value;
           }
@@ -429,7 +435,7 @@ export default {
       }
     },
     selectTiker(value) {
-      this.selectedTiker = this.tikers.find((tiker) => tiker.Id === value);
+      this.selectedTiker = this.tickers.find((ticker) => ticker.Id === value);
     },
     unselectTiker() {
       this.selectedTiker = null;
@@ -438,17 +444,27 @@ export default {
       const newTicker = this.coins.find(
         (coin) => coin.Symbol === value || coin.FullName === value
       );
-      if (newTicker && this.tikers.find((tiker) => tiker.Id === newTicker.Id)) {
-        this.errors = { tiker: "Такой тикер уже добавлен" };
+      if (
+        newTicker &&
+        this.tickers.find((ticker) => ticker.Id === newTicker.Id)
+      ) {
+        this.errors = { ticker: "Такой тикер уже добавлен" };
         return;
       }
-      this.tikers = [...this.tikers, newTicker];
+      this.tickers = [...this.tickers, newTicker];
       this.chartValues[newTicker.Symbol] = [];
-      this.tiker = null;
+      subscribeToTicker(newTicker.Symbol, (price) =>
+        this.updatePrice(newTicker.Symbol, price)
+      );
+      this.ticker = null;
     },
     removeTiker(value) {
-      this.tikers = this.tikers.filter((t) => value !== t.Id) || [];
+      unsubscribeFromTicker(this.tickers.find((t) => value !== t.Id)?.Symbol);
+      this.tickers = this.tickers.filter((t) => value !== t.Id) || [];
       this.unselectTiker();
+    },
+    updatePrice(ticker, price) {
+      this.chartValues[ticker].push({ [this.currency]: price });
     },
   },
 };
