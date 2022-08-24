@@ -1,9 +1,11 @@
 const AGGREGATE_INDEX = 5;
 
 const tickersHandlers = new Map();
-console.log(process.env.CRYPTOCOMPARE);
+console.log(process.env.VUE_APP_CRYPTOCOMPARE);
+const cryptocompare_key =
+  "d2034c6e24e6639483bb3d2b054c75833d5d137a73dbdc41d84abc1925d604dd";
 const socket = new WebSocket(
-  `wss://streamer.cryptocompare.com/v2?${process.env.CRYPTOCOMPARE}`
+  `wss://streamer.cryptocompare.com/v2?api_key=${cryptocompare_key}`
 );
 
 socket.addEventListener("message", (e) => {

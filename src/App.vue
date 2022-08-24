@@ -380,6 +380,7 @@ export default {
             },
           }
         );
+        debugger;
         const result = await response.json();
         for (const [key, value] of Object.entries(result)) {
           const currentTiker = this.tickers.find((t) => t.Name === key);
