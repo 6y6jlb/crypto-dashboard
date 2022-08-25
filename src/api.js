@@ -1,11 +1,9 @@
 const AGGREGATE_INDEX = 5;
 
 const tickersHandlers = new Map();
-console.log(process.env.VUE_APP_CRYPTOCOMPARE);
-const cryptocompare_key =
-  "d2034c6e24e6639483bb3d2b054c75833d5d137a73dbdc41d84abc1925d604dd";
+
 const socket = new WebSocket(
-  `wss://streamer.cryptocompare.com/v2?api_key=${cryptocompare_key}`
+  `wss://streamer.cryptocompare.com/v2?api_key=${process.env.VUE_APP_CRYPTOCOMPARE}`
 );
 
 socket.addEventListener("message", (e) => {
@@ -17,7 +15,6 @@ socket.addEventListener("message", (e) => {
   if (type !== AGGREGATE_INDEX || newPrice === undefined) {
     return;
   }
-
   const handlers = tickersHandlers.get(currency) ?? [];
   handlers.forEach((fn) => fn(newPrice));
 });
@@ -62,4 +59,23 @@ export const subscribeToTicker = (ticker, cb) => {
 export const unsubscribeFromTicker = (ticker) => {
   tickersHandlers.delete(ticker);
   unsubscribeFromTickerOnWs(ticker);
+};
+
+// http
+export const getCoins = async () => {
+  try {
+    const response = await fetch(
+      "https://min-api.cryptocompare.com/data/all/coinlist?summary=true",
+      {
+        method: "GET",
+        headers: {
+          authorization: process.env.VUE_APP_CRYPTOCOMPARE,
+        },
+      }
+    );
+    const result = await response.json();
+    return result;
+  } catch (e) {
+    console.warn(e);
+  }
 };

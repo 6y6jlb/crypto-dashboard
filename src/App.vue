@@ -211,7 +211,7 @@
 </template>
 
 <script>
-import { subscribeToTicker, unsubscribeFromTicker } from "./api";
+import { getCoins, subscribeToTicker, unsubscribeFromTicker } from "./api";
 import CoinDTO from "./dto/Coin";
 
 export default {
@@ -244,25 +244,27 @@ export default {
     });
 
     const items = JSON.parse(localStorage.getItem("tickers-list")) || [];
-    this.tickers = items.map(
-      (item) =>
-        new CoinDTO(
-          item._Name,
-          item._FullName,
-          item._Id,
-          item._ImageUrl,
-          item._Symbol
-        )
-    );
+    this.tickers = items.reduce((previous, current) => {
+      if (current) {
+        return [
+          ...previous,
+          new CoinDTO(
+            current._Name,
+            current._FullName,
+            current._Id,
+            current._ImageUrl,
+            current._Symbol
+          ),
+        ];
+      }
+    }, []);
     this.tickers.forEach((ticker) => {
+      this.chartValues[ticker.Symbol] = [];
       subscribeToTicker(ticker.Symbol, (price) =>
         this.updatePrice(ticker.Symbol, price)
       );
     });
     this.getAllcoins();
-    // setInterval(() => {
-    //   this.getPrices();
-    // }, 5000);
   },
   watch: {
     ticker() {
@@ -327,6 +329,27 @@ export default {
         ) {
           const currentCoin = this.coins[coin];
           const hasMatch =
+            currentCoin?.FullName.toLowerCase() === value ||
+            currentCoin?.Name.toLowerCase() === value ||
+            currentCoin?.Symbol.toLowerCase() === value;
+
+          const alreadyAdded = this.tickers.find(
+            (ticker) => ticker.Id === currentCoin?.Id
+          );
+
+          if (!alreadyAdded && hasMatch) {
+            result.push(currentCoin);
+          } else {
+            continue;
+          }
+        }
+        for (
+          let coin = 0;
+          result.length < 4 && coin <= this.coins.length;
+          coin += 1
+        ) {
+          const currentCoin = this.coins[coin];
+          const hasMatch =
             currentCoin?.FullName.toLowerCase().includes(value) ||
             currentCoin?.Name.toLowerCase().includes(value) ||
             currentCoin?.Symbol.toLowerCase().includes(value);
@@ -364,54 +387,10 @@ export default {
     showBorder(id) {
       return this.selectedTiker && id === this.selectedTiker.Id;
     },
-
-    async getPrices() {
-      if (!this.tickers.length) return;
-
-      this.updating = true;
-      try {
-        const fsyms = this.tickers.map((t) => t.Symbol).join(",");
-        const response = await fetch(
-          `https://min-api.cryptocompare.com/data/pricemulti?relaxedValidation=true&fsyms=${fsyms}&tsyms=USD,EUR,RUB`,
-          {
-            method: "GET",
-            headers: {
-              authorization: process.env.CRYPTOCOMPARE,
-            },
-          }
-        );
-        debugger;
-        const result = await response.json();
-        for (const [key, value] of Object.entries(result)) {
-          const currentTiker = this.tickers.find((t) => t.Name === key);
-          if (currentTiker) {
-            currentTiker.Price = value;
-          }
-          if (this.chartValues[key]) {
-            this.chartValues[key].push(value);
-          } else {
-            this.chartValues[key] = [];
-          }
-        }
-      } catch (error) {
-        console.warn(error);
-      } finally {
-        this.updating = false;
-      }
-    },
     async getAllcoins() {
       this.loading = true;
       try {
-        const response = await fetch(
-          "https://min-api.cryptocompare.com/data/all/coinlist?summary=true",
-          {
-            method: "GET",
-            headers: {
-              authorization: process.env.CRYPTOCOMPARE,
-            },
-          }
-        );
-        const result = await response.json();
+        const result = await getCoins();
         for (const [key, value] of Object.entries(result.Data)) {
           const newCoin = new CoinDTO(
             key,
@@ -451,6 +430,12 @@ export default {
       ) {
         this.errors = { ticker: "Такой тикер уже добавлен" };
         return;
+      } else if (!newTicker) {
+        this.errors = {
+          ticker:
+            "Поле не может быть пустым или содержать не существующую монету",
+        };
+        return;
       }
       this.tickers = [...this.tickers, newTicker];
       this.chartValues[newTicker.Symbol] = [];
@@ -465,6 +450,7 @@ export default {
       this.unselectTiker();
     },
     updatePrice(ticker, price) {
+      debugger;
       this.chartValues[ticker].push({ [this.currency]: price });
     },
   },
