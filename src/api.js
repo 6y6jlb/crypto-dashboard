@@ -1,4 +1,4 @@
-const AGGREGATE_INDEX = 5;
+const AGGREGATE_INDEX = "5";
 
 const tickersHandlers = new Map();
 
@@ -11,12 +11,14 @@ socket.addEventListener("message", (e) => {
     TYPE: type,
     FROMSYMBOL: currency,
     PRICE: newPrice,
+    TOSYMBOL: veiwCurrency,
   } = JSON.parse(e.data);
-  if (type !== AGGREGATE_INDEX || newPrice === undefined) {
-    return;
+  const acessCondition = type === AGGREGATE_INDEX && newPrice && veiwCurrency;
+  if (acessCondition) {
+    const handlers = tickersHandlers.get(currency) ?? [];
+    handlers.forEach((fn) => fn(newPrice, veiwCurrency));
   }
-  const handlers = tickersHandlers.get(currency) ?? [];
-  handlers.forEach((fn) => fn(newPrice));
+  return;
 });
 
 function sendToWebSocket(message) {

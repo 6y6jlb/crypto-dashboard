@@ -226,7 +226,7 @@ export default {
       coins: [],
       selectedTiker: null,
       chartValues: {},
-      currency: "RUB",
+      currency: "USD",
       preselectedTiker: "DOGE",
       loading: false,
       errors: {},
@@ -260,8 +260,8 @@ export default {
     }, []);
     this.tickers.forEach((ticker) => {
       this.chartValues[ticker.Symbol] = [];
-      subscribeToTicker(ticker.Symbol, (price) =>
-        this.updatePrice(ticker.Symbol, price)
+      subscribeToTicker(ticker.Symbol, (price, veiwCurrency) =>
+        this.updatePrice(ticker.Symbol, price, veiwCurrency)
       );
     });
     this.getAllcoins();
@@ -378,7 +378,12 @@ export default {
       const min = Math.min(...values);
 
       return values.map((value) => {
-        const percent = max === min ? 50 : max - value / (max - min) / 100;
+        const percent =
+          max === min
+            ? 50
+            : min === value
+            ? 5
+            : (max - value) / ((max - min) / 100);
         return { percent, value };
       });
     },
@@ -439,8 +444,8 @@ export default {
       }
       this.tickers = [...this.tickers, newTicker];
       this.chartValues[newTicker.Symbol] = [];
-      subscribeToTicker(newTicker.Symbol, (price) =>
-        this.updatePrice(newTicker.Symbol, price)
+      subscribeToTicker(newTicker.Symbol, (price, veiwCurrency) =>
+        this.updatePrice(newTicker.Symbol, price, veiwCurrency)
       );
       this.ticker = null;
     },
@@ -449,9 +454,13 @@ export default {
       this.tickers = this.tickers.filter((t) => value !== t.Id) || [];
       this.unselectTiker();
     },
-    updatePrice(ticker, price) {
-      debugger;
-      this.chartValues[ticker].push({ [this.currency]: price });
+    updatePrice(ticker, price, viewCurrency) {
+      this.chartValues[ticker].push({ [viewCurrency]: price });
+      this.tickers.map((t) => {
+        if (t.Symbol === ticker) {
+          t.Price = { [viewCurrency]: price };
+        }
+      });
     },
   },
 };
