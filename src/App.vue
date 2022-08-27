@@ -144,6 +144,19 @@
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
                 {{ t.Price[this.currency] || 0 }}
               </dd>
+              <div class="flex justify-between items-end" style="height: 30px">
+                <span
+                  v-for="(price, idx) in Object.entries(t.Price)"
+                  :key="idx"
+                >
+                  <span
+                    @click.prevent.stop="this.currency = price[0]"
+                    class="px-2 text-sm font-medium text-gray-500 truncate pointer hover:bg-violet-200 active:bg-violet-700 focus:outline-none focus:ring focus:ring-violet-300"
+                    >{{ price[0] }}:</span
+                  >
+                  <span>{{ price[1] }}</span>
+                </span>
+              </div>
             </div>
             <div class="w-full border-t border-gray-200"></div>
             <button
@@ -260,8 +273,8 @@ export default {
     }, []);
     this.tickers.forEach((ticker) => {
       this.chartValues[ticker.Symbol] = [];
-      subscribeToTicker(ticker.Symbol, (price, veiwCurrency) =>
-        this.updatePrice(ticker.Symbol, price, veiwCurrency)
+      subscribeToTicker(ticker.Symbol, (price, currency) =>
+        this.updatePrice(ticker.Symbol, price, currency)
       );
     });
     this.getAllcoins();
@@ -371,8 +384,15 @@ export default {
       return Math.ceil(this.tickers.length / this.per_page);
     },
     graphValues() {
-      const values = this.chartValues[this.selectedTiker.Name].map(
-        (item) => +item[this.currency]
+      const values = this.chartValues[this.selectedTiker.Name].reduce(
+        (previous, current) => {
+          if (current[this.currency]) {
+            return [...previous, +current[this.currency]];
+          } else {
+            return previous;
+          }
+        },
+        []
       );
       const max = Math.max(...values);
       const min = Math.min(...values);
@@ -444,8 +464,8 @@ export default {
       }
       this.tickers = [...this.tickers, newTicker];
       this.chartValues[newTicker.Symbol] = [];
-      subscribeToTicker(newTicker.Symbol, (price, veiwCurrency) =>
-        this.updatePrice(newTicker.Symbol, price, veiwCurrency)
+      subscribeToTicker(newTicker.Symbol, (price, currency) =>
+        this.updatePrice(newTicker.Symbol, price, currency)
       );
       this.ticker = null;
     },
@@ -454,11 +474,11 @@ export default {
       this.tickers = this.tickers.filter((t) => value !== t.Id) || [];
       this.unselectTiker();
     },
-    updatePrice(ticker, price, viewCurrency) {
-      this.chartValues[ticker].push({ [viewCurrency]: price });
+    updatePrice(ticker, price, currency) {
+      this.chartValues[ticker].push({ [currency]: price });
       this.tickers.map((t) => {
         if (t.Symbol === ticker) {
-          t.Price = { [viewCurrency]: price };
+          t.Price[currency] = price;
         }
       });
     },

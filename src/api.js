@@ -1,4 +1,5 @@
 const AGGREGATE_INDEX = "5";
+const CURRENCIES = ["USD", "EUR", "RUB"];
 
 const tickersHandlers = new Map();
 
@@ -9,14 +10,14 @@ const socket = new WebSocket(
 socket.addEventListener("message", (e) => {
   const {
     TYPE: type,
-    FROMSYMBOL: currency,
+    FROMSYMBOL: ticker,
     PRICE: newPrice,
-    TOSYMBOL: veiwCurrency,
+    TOSYMBOL: currency,
   } = JSON.parse(e.data);
-  const acessCondition = type === AGGREGATE_INDEX && newPrice && veiwCurrency;
+  const acessCondition = type === AGGREGATE_INDEX && newPrice && currency;
   if (acessCondition) {
-    const handlers = tickersHandlers.get(currency) ?? [];
-    handlers.forEach((fn) => fn(newPrice, veiwCurrency));
+    const handlers = tickersHandlers.get(ticker) ?? [];
+    handlers.forEach((fn) => fn(newPrice, currency));
   }
   return;
 });
@@ -39,17 +40,21 @@ function sendToWebSocket(message) {
 }
 
 function subscribeToTickerOnWs(ticker) {
-  sendToWebSocket({
-    action: "SubAdd",
-    subs: [`5~CCCAGG~${ticker}~USD`],
-  });
+  for (let currency of CURRENCIES) {
+    sendToWebSocket({
+      action: "SubAdd",
+      subs: [`5~CCCAGG~${ticker}~${currency}`],
+    });
+  }
 }
 
 function unsubscribeFromTickerOnWs(ticker) {
-  sendToWebSocket({
-    action: "SubRemove",
-    subs: [`5~CCCAGG~${ticker}~USD`],
-  });
+  for (let currency of CURRENCIES) {
+    sendToWebSocket({
+      action: "SubRemove",
+      subs: [`5~CCCAGG~${ticker}~${currency}`],
+    });
+  }
 }
 
 export const subscribeToTicker = (ticker, cb) => {
