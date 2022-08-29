@@ -1,5 +1,6 @@
 const AGGREGATE_INDEX = "5";
-const CURRENCIES = ["USD", "EUR", "RUB"];
+const REQUEST_CURRENCIES = ["USD", "BTC", "USDT"];
+const SWAT_CURRENCIES = ["USD", "EUR", "RUB"];
 
 const tickersHandlers = new Map();
 
@@ -40,7 +41,7 @@ function sendToWebSocket(message) {
 }
 
 function subscribeToTickerOnWs(ticker) {
-  for (let currency of CURRENCIES) {
+  for (let currency of REQUEST_CURRENCIES) {
     sendToWebSocket({
       action: "SubAdd",
       subs: [`5~CCCAGG~${ticker}~${currency}`],
@@ -49,7 +50,7 @@ function subscribeToTickerOnWs(ticker) {
 }
 
 function unsubscribeFromTickerOnWs(ticker) {
-  for (let currency of CURRENCIES) {
+  for (let currency of REQUEST_CURRENCIES) {
     sendToWebSocket({
       action: "SubRemove",
       subs: [`5~CCCAGG~${ticker}~${currency}`],
@@ -69,6 +70,26 @@ export const unsubscribeFromTicker = (ticker) => {
 };
 
 // http
+export const getExchachngeRates = async () => {
+  try {
+    const response = await fetch(
+      `https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=${SWAT_CURRENCIES.join(
+        ","
+      )}`,
+      {
+        method: "GET",
+        headers: {
+          authorization: process.env.VUE_APP_CRYPTOCOMPARE,
+        },
+      }
+    );
+    const result = await response.json();
+    return result;
+  } catch (e) {
+    console.warn(e);
+  }
+};
+
 export const getCoins = async () => {
   try {
     const response = await fetch(

@@ -224,7 +224,12 @@
 </template>
 
 <script>
-import { getCoins, subscribeToTicker, unsubscribeFromTicker } from "./api";
+import {
+  getCoins,
+  subscribeToTicker,
+  unsubscribeFromTicker,
+  getExchachngeRates,
+} from "./api";
 import CoinDTO from "./dto/Coin";
 
 export default {
@@ -239,13 +244,14 @@ export default {
       coins: [],
       selectedTiker: null,
       chartValues: {},
+      exchangeRate: {},
       currency: "USD",
       preselectedTiker: "DOGE",
       loading: false,
       errors: {},
     };
   },
-  created() {
+  async created() {
     const params = Object.fromEntries(
       new URL(window.location).searchParams.entries()
     );
@@ -277,6 +283,7 @@ export default {
         this.updatePrice(ticker.Symbol, price, currency)
       );
     });
+    this.getExchangeRates();
     this.getAllcoins();
   },
   watch: {
@@ -412,6 +419,9 @@ export default {
     showBorder(id) {
       return this.selectedTiker && id === this.selectedTiker.Id;
     },
+    async getExchangeRates() {
+      this.exchangeRate = await getExchachngeRates();
+    },
     async getAllcoins() {
       this.loading = true;
       try {
@@ -470,7 +480,7 @@ export default {
       this.ticker = null;
     },
     removeTiker(value) {
-      unsubscribeFromTicker(this.tickers.find((t) => value !== t.Id)?.Symbol);
+      unsubscribeFromTicker(this.tickers.find((t) => value === t.Id)?.Symbol);
       this.tickers = this.tickers.filter((t) => value !== t.Id) || [];
       this.unselectTiker();
     },
