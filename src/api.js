@@ -1,8 +1,12 @@
 const AGGREGATE_INDEX = "5";
+const INVALID_SUB = "500";
 const REQUEST_CURRENCIES = ["USD", "BTC", "USDT"];
 const SWAT_CURRENCIES = ["USD", "EUR", "RUB"];
 
-const tickersHandlers = new Map();
+const tickersHandlers = {
+  success: new Map(),
+  fail: new Map(),
+};
 
 const socket = new WebSocket(
   `wss://streamer.cryptocompare.com/v2?api_key=${process.env.VUE_APP_CRYPTOCOMPARE}`
@@ -14,11 +18,15 @@ socket.addEventListener("message", (e) => {
     FROMSYMBOL: ticker,
     PRICE: newPrice,
     TOSYMBOL: currency,
+    PARAMETER: parameter,
   } = JSON.parse(e.data);
-  const acessCondition = type === AGGREGATE_INDEX && newPrice && currency;
-  if (acessCondition) {
-    const handlers = tickersHandlers.get(ticker) ?? [];
-    handlers.forEach((fn) => fn(newPrice, currency));
+  if (type === INVALID_SUB && parameter) {
+    const options = parameter.split("~");
+    const failHandlers = tickersHandlers.fail[options[-2]] || [];
+    failHandlers.forEach((fn) => fn(options[-1]));
+  } else if (type === AGGREGATE_INDEX && newPrice && currency) {
+    const successHandlers = tickersHandlers.success[ticker] || [];
+    successHandlers.forEach((fn) => fn(newPrice, currency));
   }
   return;
 });
@@ -58,14 +66,14 @@ function unsubscribeFromTickerOnWs(ticker) {
   }
 }
 
-export const subscribeToTicker = (ticker, cb) => {
-  const subscribers = tickersHandlers.get(ticker) || [];
-  tickersHandlers.set(ticker, [...subscribers, cb]);
+export const subscribeToTicker = (ticker, cb, reason) => {
+  const subscribers = tickersHandlers[reason][ticker] || [];
+  tickersHandlers[reason][ticker] = [...subscribers, cb];
   subscribeToTickerOnWs(ticker);
 };
 
 export const unsubscribeFromTicker = (ticker) => {
-  tickersHandlers.delete(ticker);
+  delete tickersHandlers[ticker];
   unsubscribeFromTickerOnWs(ticker);
 };
 
@@ -107,3 +115,5 @@ export const getCoins = async () => {
     console.warn(e);
   }
 };
+
+window.handlers = tickersHandlers;

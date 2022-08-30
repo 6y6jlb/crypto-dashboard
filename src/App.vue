@@ -279,8 +279,15 @@ export default {
     }, []);
     this.tickers.forEach((ticker) => {
       this.chartValues[ticker.Symbol] = [];
-      subscribeToTicker(ticker.Symbol, (price, currency) =>
-        this.updatePrice(ticker.Symbol, price, currency)
+      subscribeToTicker(
+        ticker.Symbol,
+        (price, currency) => this.updatePrice(ticker.Symbol, price, currency),
+        "success"
+      );
+      subscribeToTicker(
+        ticker.Symbol,
+        (currency) => this.updatePrice(ticker.Symbol, currency),
+        "fail"
       );
     });
     this.getExchangeRates();
@@ -474,8 +481,11 @@ export default {
       }
       this.tickers = [...this.tickers, newTicker];
       this.chartValues[newTicker.Symbol] = [];
-      subscribeToTicker(newTicker.Symbol, (price, currency) =>
-        this.updatePrice(newTicker.Symbol, price, currency)
+      subscribeToTicker(
+        newTicker.Symbol,
+        (price, currency) =>
+          this.updatePrice(newTicker.Symbol, price, currency),
+        "success"
       );
       this.ticker = null;
     },
@@ -485,6 +495,14 @@ export default {
       this.unselectTiker();
     },
     updatePrice(ticker, price, currency) {
+      this.chartValues[ticker].push({ [currency]: price });
+      this.tickers.map((t) => {
+        if (t.Symbol === ticker) {
+          t.Price[currency] = price;
+        }
+      });
+    },
+    updateTiker(ticker, price, currency) {
       this.chartValues[ticker].push({ [currency]: price });
       this.tickers.map((t) => {
         if (t.Symbol === ticker) {
