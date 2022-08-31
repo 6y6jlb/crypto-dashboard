@@ -1,7 +1,8 @@
 const AGGREGATE_INDEX = "5";
 const INVALID_SUB = "500";
-const REQUEST_CURRENCIES = ["USD", "BTC", "USDT"];
+const REQUEST_CURRENCIES = ["USD"];
 const SWAT_CURRENCIES = ["USD", "EUR", "RUB"];
+export const EXCHANGE_CURRENCIES = ["EUR", "RUB"];
 
 const tickersHandlers = {
   success: new Map(),

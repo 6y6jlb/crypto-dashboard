@@ -131,11 +131,13 @@
           <div
             v-for="t in this.filteredTikets"
             :key="t.Id"
-            @click.stop="this.toggle(t.Id)"
+            @click.stop="t.Price[this.currency] && this.toggle(t.Id)"
+            class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid"
             :class="{
-              'border-4': this.showBorder(t.Id),
+              'bg-red-100': !t.Price[this.currency],
+              'cursor-pointer': t.Price[this.currency],
+              'border-4': this.showBorder(t.Id) && t.Price[this.currency],
             }"
-            class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
               <dt class="text-sm font-medium text-gray-500 truncate">
@@ -229,6 +231,7 @@ import {
   subscribeToTicker,
   unsubscribeFromTicker,
   getExchachngeRates,
+  EXCHANGE_CURRENCIES,
 } from "./api";
 import CoinDTO from "./dto/Coin";
 
@@ -286,7 +289,7 @@ export default {
       );
       subscribeToTicker(
         ticker.Symbol,
-        (currency) => this.updatePrice(ticker.Symbol, currency),
+        (currency) => this.updateTiker(ticker.Symbol, currency),
         "fail"
       );
     });
@@ -499,14 +502,20 @@ export default {
       this.tickers.map((t) => {
         if (t.Symbol === ticker) {
           t.Price[currency] = price;
+          EXCHANGE_CURRENCIES.forEach((cur) => {
+            t.Price[cur] = (
+              (this.exchangeRate[cur] / this.exchangeRate[currency]) *
+              price
+            ).toPrecision(8);
+            this.chartValues[ticker].push({ [cur]: t.Price[cur] });
+          });
         }
       });
     },
     updateTiker(ticker, price, currency) {
-      this.chartValues[ticker].push({ [currency]: price });
       this.tickers.map((t) => {
         if (t.Symbol === ticker) {
-          t.Price[currency] = price;
+          delete t.Price[currency];
         }
       });
     },
