@@ -8,7 +8,13 @@ const tickersHandlers = {
   success: new Map(),
   fail: new Map(),
 };
+// worker
+var myWorker = new SharedWorker("sw.js");
+myWorker.port.start(); // open the port connection
 
+myWorker.port.postMessage([2, 3]);
+
+// websocket
 const socket = new WebSocket(
   `wss://streamer.cryptocompare.com/v2?api_key=${process.env.VUE_APP_CRYPTOCOMPARE}`
 );
