@@ -226,13 +226,9 @@
 </template>
 
 <script>
-import {
-  getCoins,
-  subscribeToTicker,
-  unsubscribeFromTicker,
-  getExchachngeRates,
-  EXCHANGE_CURRENCIES,
-} from "./api";
+import { EXCHANGE_CURRENCIES } from "./api/const.js";
+import api from "./api/index";
+
 import CoinDTO from "./dto/Coin";
 
 export default {
@@ -282,12 +278,12 @@ export default {
     }, []);
     this.tickers.forEach((ticker) => {
       this.chartValues[ticker.Symbol] = [];
-      subscribeToTicker(
+      api.subscribeToTicker(
         ticker.Symbol,
         (price, currency) => this.updatePrice(ticker.Symbol, price, currency),
         "success"
       );
-      subscribeToTicker(
+      api.subscribeToTicker(
         ticker.Symbol,
         (currency) => this.updateTiker(ticker.Symbol, currency),
         "fail"
@@ -430,12 +426,12 @@ export default {
       return this.selectedTiker && id === this.selectedTiker.Id;
     },
     async getExchangeRates() {
-      this.exchangeRate = await getExchachngeRates();
+      this.exchangeRate = await api.getExchachngeRates();
     },
     async getAllcoins() {
       this.loading = true;
       try {
-        const result = await getCoins();
+        const result = await api.getCoins();
         for (const [key, value] of Object.entries(result.Data)) {
           const newCoin = new CoinDTO(
             key,
@@ -484,7 +480,7 @@ export default {
       }
       this.tickers = [...this.tickers, newTicker];
       this.chartValues[newTicker.Symbol] = [];
-      subscribeToTicker(
+      api.subscribeToTicker(
         newTicker.Symbol,
         (price, currency) =>
           this.updatePrice(newTicker.Symbol, price, currency),
@@ -493,7 +489,9 @@ export default {
       this.ticker = null;
     },
     removeTiker(value) {
-      unsubscribeFromTicker(this.tickers.find((t) => value === t.Id)?.Symbol);
+      api.unsubscribeFromTicker(
+        this.tickers.find((t) => value === t.Id)?.Symbol
+      );
       this.tickers = this.tickers.filter((t) => value !== t.Id) || [];
       this.unselectTiker();
     },
