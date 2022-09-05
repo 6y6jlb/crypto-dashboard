@@ -8,6 +8,7 @@ import {
 import { appChannel } from "./brocadcasts";
 
 const BROADCAST_ID = "" + Math.ceil(Math.random() * 1000) * 21;
+let lastCall = null;
 
 const tickersHandlers = {
   success: new Map(),
@@ -102,11 +103,20 @@ export const subscribeToTicker = (ticker, cb, reason) => {
 };
 
 export const unsubscribeFromTicker = (ticker) => {
-  delete tickersHandlers[ticker];
-  unsubscribeFromTickerOnWs(ticker);
+  let canBeUnsubscribe = true;
+  Object.keys(paralleStreamTickers).forEach((streamTicker) => {
+    if (paralleStreamTickers[streamTicker].includes(ticker)) {
+      canBeUnsubscribe = false;
+    }
+  });
+  if (canBeUnsubscribe) {
+    delete tickersHandlers[ticker];
+    unsubscribeFromTickerOnWs(ticker);
+  }
 };
 
 // brodcast events
+
 appChannel.onmessage = (event) => {
   if (event.data?.type === BROADCAST_EVENT.SUBSCRIBE_ALL) {
     paralleStreamTickers[event.data.channel_id] = event.data.data || [];
@@ -130,8 +140,18 @@ appChannel.onmessage = (event) => {
     event.data?.type === BROADCAST_EVENT.NEW_PRICE_WITH_CURRENCY &&
     BROADCAST_ID === event.data.channel_id
   ) {
+    lastCall = new Date();
     const { ticker, currency, price } = event.data.data;
     const successHandlers = tickersHandlers.success[ticker] || [];
     successHandlers.forEach((fn) => fn(price, currency));
   }
 };
+
+setInterval(() => {
+  if (lastCall && new Date() - lastCall > 1000 * 60) {
+    paralleStreamTickers[BROADCAST_ID].forEach((ticker) =>
+      subscribeToTickerOnWs(ticker)
+    );
+    console.warn(lastCall && new Date() - lastCall);
+  }
+}, 1000 * 3);
