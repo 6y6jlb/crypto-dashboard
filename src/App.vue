@@ -186,7 +186,10 @@
           <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
             {{ this.selectedTiker.Name }} - {{ this.currency }}
           </h3>
-          <div class="flex items-end border-gray-600 border-b border-l h-64">
+          <div
+            class="flex items-end border-gray-600 border-b border-l h-64"
+            ref="graph"
+          >
             <div
               v-for="(item, idx) in this.graphValues"
               :key="idx"
@@ -248,7 +251,12 @@ export default {
       preselectedTiker: "DOGE",
       loading: false,
       errors: {},
+      maxGraphLength: null,
+      graphColumnWidth: 30,
     };
+  },
+  mounted() {
+    window.addEventListener("resize", this.calculateMaxGraphLength);
   },
   async created() {
     const params = Object.fromEntries(
@@ -410,7 +418,7 @@ export default {
       const max = Math.max(...values);
       const min = Math.min(...values);
 
-      return values.map((value) => {
+      const calculatedGraph = values.map((value) => {
         const percent =
           max === min
             ? 50
@@ -419,9 +427,21 @@ export default {
             : (max - value) / ((max - min) / 100);
         return { percent, value };
       });
+      if (!this.maxGraphLength) this.calculateMaxGraphLength();
+      if (calculatedGraph.length > this.maxGraphLength) {
+        calculatedGraph.splice(0, calculatedGraph.length - this.maxGraphLength);
+      }
+      return calculatedGraph;
     },
   },
   methods: {
+    calculateMaxGraphLength() {
+      if (this.$refs.graph) {
+        this.maxGraphLength = Math.ceil(
+          this.$refs.graph.clientWidth / this.graphColumnWidth
+        );
+      }
+    },
     showBorder(id) {
       return this.selectedTiker && id === this.selectedTiker.Id;
     },
