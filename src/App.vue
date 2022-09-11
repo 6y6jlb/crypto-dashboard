@@ -146,18 +146,18 @@
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
                 {{ t.Price[this.currency] || 0 }}
               </dd>
-              <div class="flex justify-between items-end" style="height: 30px">
-                <span
-                  v-for="(price, idx) in Object.entries(t.Price)"
-                  :key="idx"
-                >
+              <div
+                class="flex justify-center items-end flex-wrap"
+                style="min-height: 30px"
+              >
+                <div v-for="(price, idx) in Object.entries(t.Price)" :key="idx">
                   <span
                     @click.prevent.stop="this.currency = price[0]"
                     class="px-2 text-sm font-medium text-gray-500 truncate pointer hover:bg-violet-200 active:bg-violet-700 focus:outline-none focus:ring focus:ring-violet-300"
                     >{{ price[0] }}:</span
                   >
                   <span>{{ price[1] }}</span>
-                </span>
+                </div>
               </div>
             </div>
             <div class="w-full border-t border-gray-200"></div>
@@ -252,11 +252,14 @@ export default {
       loading: false,
       errors: {},
       maxGraphLength: null,
-      graphColumnWidth: 30,
+      graphColumnWidth: 15,
     };
   },
   mounted() {
     window.addEventListener("resize", this.calculateMaxGraphLength);
+  },
+  beforeUnmount() {
+    window.removeEventListener("resize", this.calculateMaxGraphLength);
   },
   async created() {
     const params = Object.fromEntries(
