@@ -1,5 +1,6 @@
 <template>
   <div
+    v-if="this.ticker"
     @click.stop="
       this.ticker.Price[this.currency] && this.$emit('toggle', this.ticker.Id)
     "
@@ -7,8 +8,7 @@
     :class="{
       'bg-red-100': !this.ticker.Price[this.currency],
       'cursor-pointer': this.ticker.Price[this.currency],
-      'border-4':
-        this.showBorder(this.ticker.Id) && this.ticker.Price[this.currency],
+      'border-4': this.showBorder && this.ticker.Price[this.currency],
     }"
   >
     <div class="px-4 py-5 sm:p-6 text-center">
@@ -37,7 +37,7 @@
     </div>
     <div class="w-full border-t border-gray-200"></div>
     <button
-      @click.prevent="this.removeTiker(t.Id)"
+      @click.prevent="this.$emit('remove-ticker', this.ticker.Id)"
       class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none"
     >
       <svg
@@ -64,7 +64,7 @@ export default {
   props: {
     ticker: {
       type: CoinDTO,
-      default: {},
+      default: null,
     },
     showBorder: {
       type: Boolean,
