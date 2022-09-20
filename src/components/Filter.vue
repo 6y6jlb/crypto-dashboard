@@ -10,22 +10,15 @@
       placeholder="Фильтрация"
     />
     <template v-if="this.filteredTickersLength">
-      <button
-        v-if="this.page > 1"
-        @click="this.$emit('decrement-page')"
-        type="button"
-        class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-      >
+      <button-vue v-if="this.page > 1" @click="this.$emit('decrement-page')">
         Назад
-      </button>
-      <button
+      </button-vue>
+      <button-vue
         v-if="this.page < this.maxPage"
         @click="this.$emit('increment-page')"
-        type="button"
-        class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
       >
         Вперед
-      </button>
+      </button-vue>
     </template>
   </div>
   <div v-if="this.errors?.filter" class="px-4 text-sm text-red-600">
@@ -40,8 +33,10 @@
 </template>
 
 <script>
+import ButtonVue from "./Button.vue";
 export default {
   name: "filter-vue",
+  components: { ButtonVue },
   props: {
     tickersLength: {
       type: Number,
@@ -64,13 +59,21 @@ export default {
       type: Number,
       default: 0,
     },
+    errors: {
+      type: Object,
+      default: () => {},
+    },
+  },
+  emits: {
+    "input-filter": (value) => typeof value === "string",
+    "increment-page": null,
+    "decrement-page": null,
   },
   created() {
     this.filter = this.filterValue;
   },
   data() {
     return {
-      errors: {},
       filter: "",
     };
   },

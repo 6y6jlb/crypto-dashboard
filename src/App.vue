@@ -32,7 +32,7 @@
         @add-ticker="addTicker"
       />
 
-      <Filter-vue
+      <filter-vue
         @increment-page="page++"
         @decrement-page="page--"
         @input-filter="(value) => (this.filter = value)"
@@ -41,6 +41,7 @@
         :page="this.page"
         :maxPage="this.maxPage"
         :filterValue="this.filter"
+        :errors="this.errors"
       />
 
       <template v-if="this.filteredTickers.length">
@@ -181,7 +182,7 @@ export default {
       return tickers.slice(this.startIndex, this.endIndex);
     },
     maxPage() {
-      return Math.ceil(this.filteredTickers.length / this.per_page);
+      return Math.ceil(this.tickers.length / this.per_page);
     },
   },
   methods: {

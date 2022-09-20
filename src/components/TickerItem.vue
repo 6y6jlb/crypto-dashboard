@@ -75,6 +75,11 @@ export default {
       default: "USD",
     },
   },
+  emits: {
+    "remove-ticker": null,
+    "change-currency": null,
+    toggle: null,
+  },
 };
 </script>
 
