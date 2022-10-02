@@ -26,7 +26,7 @@
           <ticker-item
             v-for="t in this.filteredTickers"
             @toggle="toggle"
-            @remove-ticker="removeTicker"
+            @remove-ticker="showRemoveTickerModal"
             @change-currency="changeCurrency"
             :key="t.id"
             :ticker="t"
@@ -44,6 +44,13 @@
       </template>
     </div>
   </div>
+  <vue-modal
+    ref="delete-item-modal"
+    @success="(value) => this.removeTicker(value)"
+  >
+    <template #header>Delete Item</template>
+    <template #body>Are you sure?</template>
+  </vue-modal>
 </template>
 
 <script>
@@ -53,12 +60,13 @@ import AddTickerForm from "./components/AddTickerForm";
 import TickerItem from "./components/TickerItem.vue";
 import MainChart from "./components/Chart.vue";
 import FilterVue from "./components/Filter.vue";
+import VueModal from "./components/VueModal.vue";
 
 import CoinDTO from "./dto/Coin";
 
 export default {
   name: "App",
-  components: { AddTickerForm, TickerItem, MainChart, FilterVue },
+  components: { AddTickerForm, TickerItem, MainChart, FilterVue, VueModal },
   data() {
     return {
       filter: null,
@@ -214,12 +222,16 @@ export default {
         "success"
       );
     },
+    showRemoveTickerModal(value) {
+      this.$refs["delete-item-modal"].show(value);
+    },
     removeTicker(value) {
       api.unsubscribeFromTicker(
         this.tickers.find((t) => value === t.Id)?.Symbol
       );
       this.tickers = this.tickers.filter((t) => value !== t.Id) || [];
       this.unselectTicker();
+      this.$refs["delete-item-modal"].hide();
     },
     updatePrice(ticker, price, currency) {
       this.chartValues[ticker].push({ [currency]: price });

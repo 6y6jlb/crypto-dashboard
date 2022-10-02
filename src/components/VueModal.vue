@@ -1,14 +1,13 @@
 <template>
   <div
-    v-if="this.isVisible"
-    class="fixed pin z-50 overflow-auto bg-smoke-light flex"
+    v-if="isVisible"
+    id="modal"
+    ref="modal"
+    tabindex="-1"
+    class="hiden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 w-full md:inset-0 h-modal md:h-full"
   >
     <div
-      id="modal"
-      ref="modal"
-      tabindex="-1"
-      :class="{ hiden: !isVisible }"
-      class="overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 w-full md:inset-0 h-modal md:h-full"
+      class="fixed w-100 h-100 inset-0 z-50 flex items-center justify-center"
     >
       <div class="relative p-4 w-full max-w-md h-full md:h-auto">
         <!-- Modal content -->
@@ -21,6 +20,7 @@
               <slot name="header">Header</slot>
             </h3>
             <button
+              @click="hide"
               type="button"
               class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
             >
@@ -49,12 +49,14 @@
             class="flex items-center p-6 space-x-2 rounded-b border-t border-gray-200 dark:border-gray-600"
           >
             <button
+              @click="this.$emit('success', this.modalData)"
               type="button"
               class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
             >
               I accept
             </button>
             <button
+              @click="hide"
               type="button"
               class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
             >
@@ -64,6 +66,11 @@
         </div>
       </div>
     </div>
+    <div
+      v-if="this.isVisible"
+      @click="hide"
+      class="fixed w-100 h-100 opacity-80 bg-slate-800 inset-0 z-1 flex items-center justify-center"
+    />
   </div>
 </template>
 
@@ -72,15 +79,17 @@ export default {
   name: "VueModal",
   data() {
     return {
-      isVisible: true,
+      isVisible: false,
+      data: null,
     };
   },
   methods: {
-    show() {
-      if (this.$refs.modal) {
-        console.log(this.$refs.modal);
-        this.$refs.modal.toggle();
-      }
+    show(data) {
+      this.modalData = data;
+      this.isVisible = true;
+    },
+    hide() {
+      this.isVisible = false;
     },
   },
 };

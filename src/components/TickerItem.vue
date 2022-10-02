@@ -37,7 +37,7 @@
     </div>
     <div class="w-full border-t border-gray-200"></div>
     <button
-      @click.prevent="this.$refs['delete-item-modal'].show()"
+      @click.prevent="this.$emit('removeTicker', this.ticker.Id)"
       class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none"
     >
       <svg
@@ -54,19 +54,13 @@
         ></path></svg
       >Удалить
     </button>
-    <vue-modal ref="delete-item-modal">
-      <template #header>Delete Item</template>
-      <template #body>Are you sure?</template>
-    </vue-modal>
   </div>
 </template>
 
 <script>
-import VueModal from "./VueModal.vue";
 import CoinDTO from "@/dto/Coin";
 export default {
   name: "TikerItem",
-  components: { VueModal },
   props: {
     ticker: {
       type: CoinDTO,
@@ -88,5 +82,3 @@ export default {
   },
 };
 </script>
-
-<style></style>
