@@ -9,7 +9,7 @@
     <div
       class="fixed w-100 h-100 inset-0 z-50 flex items-center justify-center"
     >
-      <div class="relative p-4 w-full max-w-md h-full md:h-auto">
+      <div class="relative p-4 w-full max-w-xl h-full md:h-auto">
         <!-- Modal content -->
         <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
           <!-- Modal header -->
@@ -48,12 +48,23 @@
           <div
             class="flex items-center p-6 space-x-2 rounded-b border-t border-gray-200 dark:border-gray-600"
           >
+            <input
+              v-if="this.withAction"
+              v-model="this.confirmation"
+              type="text"
+              name="confirmation"
+              id="confirmation"
+              class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+              :placeholder="this.confirmationText"
+            />
             <button
-              @click="this.$emit('success', this.modalData)"
+              @click="this.$emit('confirm', this.modalData)"
+              :disabled="!this.confirmPermission"
               type="button"
               class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              :class="{ 'disabled:opacity-25': !this.confirmPermission }"
             >
-              I accept
+              Cofirm
             </button>
             <button
               @click="hide"
@@ -77,11 +88,31 @@
 <script>
 export default {
   name: "VueModal",
+  props: {
+    confirmationText: {
+      type: String,
+      required: false,
+      default: "ПОДТВЕРЖДАЮ",
+    },
+    withAction: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+  },
   data() {
     return {
       isVisible: false,
       data: null,
+      confirmation: "",
     };
+  },
+  computed: {
+    confirmPermission() {
+      return this.withAction
+        ? this.confirmationText === this.confirmation
+        : true;
+    },
   },
   methods: {
     show(data) {
@@ -94,5 +125,3 @@ export default {
   },
 };
 </script>
-
-<style></style>

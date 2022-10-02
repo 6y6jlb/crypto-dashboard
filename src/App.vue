@@ -46,7 +46,7 @@
   </div>
   <vue-modal
     ref="delete-item-modal"
-    @success="(value) => this.removeTicker(value)"
+    @confirm="(value) => this.removeTicker(value)"
   >
     <template #header>Delete Item</template>
     <template #body>Are you sure?</template>
