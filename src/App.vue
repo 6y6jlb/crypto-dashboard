@@ -44,12 +44,35 @@
       </template>
     </div>
   </div>
-  <vue-modal
-    ref="delete-item-modal"
-    @confirm="(value) => this.removeTicker(value)"
-  >
+  <vue-modal ref="delete-item-modal">
     <template #header>Delete Item</template>
     <template #body>Are you sure?</template>
+    <template #actions="{ close, confirm }">
+      <input
+        v-model="this.confirmation"
+        type="text"
+        name="confirmation"
+        id="confirmation"
+        class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+        :placeholder="this.$options.CONFIRMATION_TEXT"
+      />
+      <button
+        @click="() => confirm(this.removeTicker)"
+        :disabled="!this.confirmPermission"
+        type="button"
+        class="text-white bg-violet-700 hover:bg-violet-800 focus:ring-4 focus:outline-none focus:ring-violet-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-violet-600 dark:hover:bg-violet-700 dark:focus:ring-violet-800"
+        :class="{ 'disabled:opacity-25': !this.confirmPermission }"
+      >
+        Cofirm
+      </button>
+      <button
+        @click="close"
+        type="button"
+        class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
+      >
+        Decline
+      </button></template
+    >
   </vue-modal>
 </template>
 
@@ -67,9 +90,11 @@ import CoinDTO from "./dto/Coin";
 export default {
   name: "App",
   components: { AddTickerForm, TickerItem, MainChart, FilterVue, VueModal },
+  CONFIRMATION_TEXT: "Подтверждаю",
   data() {
     return {
       filter: null,
+      confirmation: null,
       page: 1,
       per_page: 6,
       tickers: [],
@@ -146,6 +171,9 @@ export default {
     },
   },
   computed: {
+    confirmPermission() {
+      return this.$options.CONFIRMATION_TEXT === this.confirmation;
+    },
     startIndex() {
       return (this.page - 1) * this.per_page;
     },
@@ -231,6 +259,7 @@ export default {
       );
       this.tickers = this.tickers.filter((t) => value !== t.Id) || [];
       this.unselectTicker();
+      this.confirmation = null;
       this.$refs["delete-item-modal"].hide();
     },
     updatePrice(ticker, price, currency) {
