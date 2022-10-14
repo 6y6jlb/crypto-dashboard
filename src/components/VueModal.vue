@@ -8,6 +8,7 @@
   >
     <div
       class="fixed w-100 h-100 inset-0 z-50 flex items-center justify-center"
+      @click.self="hide"
     >
       <div class="relative p-4 w-full max-w-xl h-full md:h-auto">
         <!-- Modal content -->
@@ -70,7 +71,6 @@
     </div>
     <div
       v-if="this.isVisible"
-      @click="hide"
       class="fixed w-100 h-100 opacity-80 bg-slate-800 inset-0 z-1 flex items-center justify-center"
     />
   </div>
@@ -79,6 +79,12 @@
 <script>
 export default {
   name: "VueModal",
+  created() {
+    document.addEventListener("keydown", this.keyDownHandler);
+  },
+  beforeUnmount() {
+    document.removeEventListener("keydown", this.keyDownHandler);
+  },
   data() {
     return {
       isVisible: false,
@@ -88,6 +94,7 @@ export default {
   },
   methods: {
     show(data) {
+      this.confirmation = "";
       this.modalData = data;
       this.isVisible = true;
     },
@@ -97,6 +104,11 @@ export default {
     confirm(callback) {
       if (callback) callback(this.modalData);
       this.hide();
+    },
+    keyDownHandler(event) {
+      if (event.key === "Escape") {
+        this.hide();
+      }
     },
   },
 };

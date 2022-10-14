@@ -28,7 +28,7 @@
         >
           <span
             @click.prevent.stop="this.changeCurrency(price[0])"
-            class="px-2 text-sm font-medium text-gray-500 truncate pointer hover:bg-violet-200 active:bg-violet-700 focus:outline-none focus:ring focus:ring-violet-300"
+            class="px-2 text-sm font-medium text-gray-500 truncate pointer hover:bg- -200 active:bg-violet-700 focus:outline-none focus:ring focus:ring-violet-300"
             >{{ price[0] }}:</span
           >
           <span>{{ price[1] }}</span>
